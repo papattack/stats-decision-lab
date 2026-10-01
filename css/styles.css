@@ -399,6 +399,52 @@ details.deeper[open] summary::before { content: "\25BE  "; }
 .error-box { background: var(--red-soft); border: 1px solid var(--red); border-radius: var(--radius-sm); padding: 1rem; }
 .error-box pre { white-space: pre-wrap; font-size: .8rem; }
 
+/* ---------- do-first: prompt, coach bubble, stuck panel ---------- */
+.do-prompt {
+  background: var(--brand-soft); border-left: 4px solid var(--brand);
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  padding: .7rem .9rem; margin: 0 0 1rem; font-size: 1rem;
+}
+
+.coach { display: flex; gap: .6rem; align-items: flex-start; margin: 0 0 1rem; }
+.coach-face {
+  flex: none; width: 34px; height: 34px; border-radius: 50%;
+  background: var(--amber-soft); display: grid; place-items: center; font-size: 1.1rem;
+}
+.coach-bubble {
+  position: relative; flex: 1; background: #fff; border: 1px solid var(--line);
+  border-radius: var(--radius-sm); padding: .7rem .9rem; box-shadow: var(--shadow);
+  font-size: .95rem; min-height: 1.5em;
+}
+.coach-bubble::before {
+  content: ''; position: absolute; left: -7px; top: 12px;
+  border: 7px solid transparent; border-right-color: var(--line); border-left: 0;
+}
+.coach-bubble.coach-sig { border-color: var(--green); background: var(--green-soft); }
+.coach-bubble.coach-notsig { border-color: var(--amber); background: var(--amber-soft); }
+.coach-bubble.coach-edge { border-color: var(--brand); background: var(--brand-soft); }
+.coach-bubble.coach-info { border-color: var(--brand); }
+.coach-pulse .coach-bubble { animation: coachpulse .4s ease; }
+@keyframes coachpulse {
+  0% { transform: scale(1); } 40% { transform: scale(1.015); } 100% { transform: scale(1); }
+}
+
+.stuck {
+  margin: 1.2rem 0; border: 1px dashed var(--line); border-radius: var(--radius);
+  background: #fcfdff; overflow: hidden;
+}
+.stuck-summary {
+  cursor: pointer; padding: .8rem 1rem; font-weight: 700; color: var(--brand);
+  list-style: none; user-select: none; display: flex; align-items: center; gap: .5rem;
+}
+.stuck-summary::-webkit-details-marker { display: none; }
+.stuck-summary::after { content: '\25B8'; margin-left: auto; transition: transform .15s; }
+.stuck[open] .stuck-summary::after { transform: rotate(90deg); }
+.stuck-summary:hover { background: var(--brand-soft); }
+.stuck-icon { font-size: 1.1rem; }
+.stuck-body { padding: 0 1rem 1rem; }
+.stuck-body .teach-card:first-child { margin-top: .4rem; }
+
 /* ---------- responsive ---------- */
 @media (max-width: 760px) {
   .map-layout { grid-template-columns: 1fr; }

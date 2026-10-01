@@ -14,13 +14,12 @@ const MapModule = (() => {
     UI.clear(view);
 
     view.appendChild(el('div.module-head', {}, [
-      el('h2', { text: 'The Statistics Map' }),
-      el('p.lede', { html:
-        'This is the one connected system the whole course is about. ' +
-        'Pick a test to trace it through five stages: ' +
-        '<strong>question/data goes in \u2192 the test runs \u2192 a result comes out \u2192 ' +
-        'you judge significance \u2192 you interpret it for a real patient.</strong>' })
+      el('h2', { text: 'The Statistics Map' })
     ]));
+    view.appendChild(UI.prompt(
+      '<strong>Click any test below.</strong> It traces that test through the whole pipeline \u2014 ' +
+      'what question/data goes in, what it does, what comes out, how you judge significance, and what it ' +
+      'means for a patient. This is the one connected system everything else plugs into.'));
 
     const layout = el('div.map-layout', {}, []);
 

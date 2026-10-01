@@ -14,15 +14,20 @@ const ChooseTestModule = (() => {
   function render(view) {
     UI.clear(view);
     view.appendChild(el('div.module-head', {}, [
-      el('h2', { text: '1 \u00b7 Choose-the-Test Simulator' }),
-      el('p.lede', { html:
-        'We\u2019ll <strong>learn what each test is for</strong> first, then you\u2019ll match tests to research scenarios. ' +
-        'After each answer, you\u2019ll see exactly which clues in the question point to the right test.' })
+      el('h2', { text: '1 \u00b7 Which test fits?' })
     ]));
 
-    /* --- TEACH: a compact card per test --- */
-    const teachWrap = el('section.teach-wrap', {}, [
-      el('h3', { text: 'Teach it first: what each test is for' }),
+    // DO FIRST: jump straight into a scenario. Teaching is on demand.
+    view.appendChild(UI.prompt(
+      '<strong>Read the scenario and pick a test.</strong> Guess if you\u2019re not sure \u2014 after you answer, ' +
+      'the clues that point to the right test light up. That\u2019s how you\u2019ll learn them.'));
+
+    const quizHost = el('div#ct-quiz', {}, []);
+    view.appendChild(quizHost);
+    Store.markTaught(id);
+
+    /* --- reference: what each test is for, on demand --- */
+    view.appendChild(UI.stuck([
       el('div.mini-test-grid', {},
         ORDER.map(k => {
           const t = Content.TESTS[k];
@@ -34,14 +39,7 @@ const ChooseTestModule = (() => {
           ]);
         })
       )
-    ]);
-    view.appendChild(teachWrap);
-    Store.markTaught(id);
-
-    /* --- MANIPULATE/QUIZ: scenario picker --- */
-    view.appendChild(el('h3.section-divider', { text: 'Now you try: pick the test' }));
-    const quizHost = el('div#ct-quiz', {}, []);
-    view.appendChild(quizHost);
+    ], 'Stuck? Show me a cheat-sheet of what each test is for'));
 
     let order = shuffle(Content.SCENARIOS.slice());
     let idx = 0;

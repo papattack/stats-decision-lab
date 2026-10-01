@@ -12,6 +12,7 @@
 const ConfidenceModule = (() => {
   const id = 'confidence';
   const el = UI.el;
+  let coachRef = null;
 
   const W = 640, H = 150, PAD = 46;
   let mode = 'difference';     // 'difference' | 'ratio'
@@ -24,35 +25,22 @@ const ConfidenceModule = (() => {
   function render(view) {
     UI.clear(view);
     view.appendChild(el('div.module-head', {}, [
-      el('h2', { text: '4 \u00b7 Confidence-Interval Playground' }),
-      el('p.lede', { html:
-        'Learn what a 95% CI is telling you, then <strong>drag the ends</strong>. ' +
-        'Watch why crossing the "no-effect" line flips the result to NOT significant \u2014 ' +
-        'and why that line is <strong>0 for differences</strong> but <strong>1 for ratios</strong>.' })
+      el('h2', { text: '4 \u00b7 Confidence intervals \u2014 drag the bar' })
     ]));
 
-    view.appendChild(el('section.teach-wrap', {}, [
-      el('h3', { text: 'Teach it first' }),
-      UI.teachCard(Content.VOCAB.confidenceInterval),
-      el('div.why-box', {}, [
-        el('h4', { text: 'Why 0 and 1 are the "no effect" values' }),
-        el('p', { html:
-          'A <strong>difference</strong> is one number minus another. "No effect" means they\u2019re equal, ' +
-          'so their difference is <strong>0</strong>. If your CI for a difference includes 0, "no difference" ' +
-          'is still a plausible truth \u2192 not significant.' }),
-        el('p', { html:
-          'A <strong>ratio</strong> (OR, RR, HR) is one number divided by another. "No effect" means the ' +
-          'numerator equals the denominator, so the fraction equals <strong>1</strong>. If your CI for a ratio ' +
-          'includes 1, "no difference" is still plausible \u2192 not significant.' })
-      ])
-    ]));
+    // DO FIRST
+    view.appendChild(UI.prompt(
+      '<strong>Grab either end of the blue bar and slide it.</strong> The red dashed line is the ' +
+      '"no effect" line. Drag the bar so it <em>touches</em> that line, then pull it clear \u2014 ' +
+      'watch the verdict flip.'));
+
+    coachRef = UI.coach('Drag an end of the bar across the red line and I\u2019ll explain what changed\u2026');
+    view.appendChild(coachRef.node);
     Store.markTaught(id);
 
-    view.appendChild(el('h3.section-divider', { text: 'Now manipulate it' }));
-
     const modeRow = el('div.ci-mode-row', {}, [
-      modeBtn('A difference (means) \u2014 no-effect line at 0', 'difference'),
-      modeBtn('A ratio (OR / RR / HR) \u2014 no-effect line at 1', 'ratio')
+      modeBtn('I\u2019m looking at a difference (means) \u2014 line at 0', 'difference'),
+      modeBtn('I\u2019m looking at a ratio (OR / RR / HR) \u2014 line at 1', 'ratio')
     ]);
     view.appendChild(modeRow);
 
@@ -111,8 +99,22 @@ const ConfidenceModule = (() => {
       redraw();
     }
 
+    // the "why", on demand
+    view.appendChild(UI.stuck([
+      UI.teachCard(Content.VOCAB.confidenceInterval),
+      el('div.why-box', {}, [
+        el('h4', { text: 'Why 0 and 1 are the "no effect" values' }),
+        el('p', { html:
+          'A <strong>difference</strong> is one number minus another. "No effect" means they\u2019re equal, ' +
+          'so the difference is <strong>0</strong>. A CI for a difference that includes 0 \u2192 not significant.' }),
+        el('p', { html:
+          'A <strong>ratio</strong> (OR/RR/HR) is one number divided by another. "No effect" means they\u2019re equal, ' +
+          'so the fraction is <strong>1</strong>. A CI for a ratio that includes 1 \u2192 not significant.' })
+      ])
+    ], 'Stuck? Why is the "no effect" line at 0 for differences but 1 for ratios?'));
+
     // questions
-    view.appendChild(el('h3.section-divider', { text: 'Check yourself' }));
+    view.appendChild(el('h3.section-divider', { text: 'Quick check' }));
     view.appendChild(UI.mcq({
       moduleId: id, level: 'easy', category: 'ci-difference',
       stem: 'A mean difference has 95% CI (\u22120.79, 1.49). Significant?',
@@ -223,7 +225,23 @@ const ConfidenceModule = (() => {
         : el('span', { html: 'The interval <strong>excludes ' + noEffect + '</strong> \u2192 ' +
             '<strong>statistically significant</strong>. We can reject the "no effect" hypothesis.' })
     ));
+
+    if (coachRef) {
+      const thing = mode === 'ratio' ? 'ratio' : 'difference';
+      const noEff = mode === 'ratio' ? 'no association (the groups\u2019 odds/risk are equal)' : 'no difference between the groups';
+      if (crosses) {
+        coachRef.say('Your bar is <strong>sitting on top of ' + noEffect + '</strong>. Since this is a ' + thing +
+          ', ' + noEffect + ' means ' + noEff + ' \u2014 and that\u2019s still inside your range. ' +
+          'So you <strong>can\u2019t rule it out</strong>: not significant. Pull an end clear of the line to flip it.', 'notsig');
+      } else {
+        coachRef.say('Nice \u2014 your whole bar is <strong>off ' + noEffect + '</strong>. ' + capitalize(noEff) +
+          ' is no longer plausible, so this is <strong>statistically significant</strong>. ' +
+          'Drag it back over the line to see it flip the other way.', 'sig');
+      }
+    }
   }
+
+  function capitalize(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
 
   function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
 

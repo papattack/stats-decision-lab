@@ -16,25 +16,21 @@ const RiskModule = (() => {
   // Control (no heparin):   c=175 events, d=225 none
   let a = 50, b = 350, c = 175, d = 225;
 
+  let coachRef = null;
+
   function render(view) {
     UI.clear(view);
     view.appendChild(el('div.module-head', {}, [
-      el('h2', { text: '5 \u00b7 Risk Calculator' }),
-      el('p.lede', { html:
-        'Learn each risk measure one at a time, then <strong>edit the 2\u00d72 table</strong> and watch every ' +
-        'measure \u2014 and its plain-English meaning \u2014 update together.' })
+      el('h2', { text: '5 \u00b7 Risk \u2014 change the patient counts' })
     ]));
 
-    const measures = ['absoluteRisk', 'arr', 'relativeRisk', 'rrr', 'oddsRatio', 'nnt'];
-    view.appendChild(el('section.teach-wrap', {}, [
-      el('h3', { text: 'Teach them one at a time' }),
-      ...measures.map(m => UI.teachCard(Content.VOCAB[m]))
-    ]));
-    Store.markTaught(id);
+    // DO FIRST: the table is the hero
+    view.appendChild(UI.prompt(
+      '<strong>Type new numbers into the table.</strong> It starts with the lecture\u2019s heparin trial. ' +
+      'Every risk measure below recalculates instantly \u2014 try making the treatment look better or worse.'));
 
-    view.appendChild(el('h3.section-divider', { text: 'Now manipulate the 2\u00d72 table' }));
-    view.appendChild(el('p.table-note', { html:
-      'Defaults are the lecture\u2019s heparin trial. Change any of the four counts to see the measures move.' }));
+    coachRef = UI.coach('Change a number in the table and I\u2019ll point out what moved and why\u2026');
+    view.appendChild(coachRef.node);
 
     const tableHost = el('div#risk-table', {}, []);
     view.appendChild(tableHost);
@@ -43,17 +39,23 @@ const RiskModule = (() => {
     view.appendChild(resultsHost);
 
     view.appendChild(el('div.preset-row', {}, [
-      el('span.preset-label', { text: 'Lecture presets:' }),
-      el('button.preset-btn', { type: 'button', onclick: () => { set(50,350,175,225); } },
+      el('span.preset-label', { text: 'Try a preset:' }),
+      el('button.preset-btn', { type: 'button', onclick: () => { set(50,350,175,225); coach('Back to the heparin trial.'); } },
         'Heparin RCT'),
-      el('button.preset-btn', { type: 'button', onclick: () => { set(25,75,50,50); } },
-        'Vaccine 50%\u219225% risk'),
-      el('button.preset-btn', { type: 'button', onclick: () => { set(1,99,2,98); } },
-        'Vaccine 2%\u21921% risk (same RRR!)')
+      el('button.preset-btn', { type: 'button', onclick: () => { set(25,75,50,50); coach('Risk drops 50%\u219225%. Note the ARR and NNT now.'); } },
+        'Vaccine 50%\u219225%'),
+      el('button.preset-btn', { type: 'button', onclick: () => { set(1,99,2,98); coach('Same 50% RRR as the last preset \u2014 but look how tiny the ARR is and how huge the NNT got. That\u2019s the trap.'); } },
+        'Vaccine 2%\u21921% (same RRR!)')
     ]));
+    Store.markTaught(id);
+
+    // definitions on demand
+    const measures = ['absoluteRisk', 'arr', 'relativeRisk', 'rrr', 'oddsRatio', 'nnt'];
+    view.appendChild(UI.stuck(measures.map(m => UI.teachCard(Content.VOCAB[m])),
+      'Stuck? What do AR, ARR, RR, RRR, OR and NNT actually mean?'));
 
     // questions
-    view.appendChild(el('h3.section-divider', { text: 'Check yourself' }));
+    view.appendChild(el('h3.section-divider', { text: 'Quick check' }));
     view.appendChild(UI.mcq({
       moduleId: id, level: 'easy', category: 'risk-measures',
       stem: 'Control event rate is 43.8% and experimental is 12.5%. The <em>absolute</em> risk reduction is\u2026',
@@ -75,6 +77,24 @@ const RiskModule = (() => {
     }));
 
     function set(na, nb, nc, nd) { a=na; b=nb; c=nc; d=nd; drawTable(); drawResults(); }
+    function coach(msg) { if (coachRef) coachRef.say(msg, 'info'); }
+    function coachOnChange() {
+      if (!coachRef) return;
+      const EER = (a+b) ? a/(a+b) : 0, CER = (c+d) ? c/(c+d) : 0;
+      const ARR = CER - EER, NNT = ARR ? 1/ARR : NaN;
+      if (ARR > 0) {
+        coachRef.say('Treatment now looks <strong>protective</strong>: the treated group\u2019s event rate (' +
+          (EER*100).toFixed(1) + '%) is below the control\u2019s (' + (CER*100).toFixed(1) + '%). ' +
+          'ARR = ' + (ARR*100).toFixed(1) + ' pp, so NNT \u2248 ' + (NNT>0?Math.ceil(NNT):'\u2014') +
+          ' (treat that many for one to benefit).', 'sig');
+      } else if (ARR < 0) {
+        coachRef.say('Careful \u2014 the treated group\u2019s event rate (' + (EER*100).toFixed(1) +
+          '%) is now <strong>higher</strong> than control (' + (CER*100).toFixed(1) + '%). ' +
+          'ARR is negative, so this "treatment" is associated with <em>more</em> harm here.', 'notsig');
+      } else {
+        coachRef.say('The two event rates are equal right now \u2014 ARR = 0, so there\u2019s no measurable benefit either way.', 'edge');
+      }
+    }
     function drawTable() {
       UI.clear(tableHost);
       tableHost.appendChild(buildTable());
@@ -89,6 +109,7 @@ const RiskModule = (() => {
             if (key === 'a') a = n; if (key === 'b') b = n;
             if (key === 'c') c = n; if (key === 'd') d = n;
             drawResults();
+            coachOnChange();
           }
         })
       ]);

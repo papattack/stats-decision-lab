@@ -151,5 +151,43 @@ const UI = (() => {
     return el('span.badge.badge-' + (kind || 'info'), { text });
   }
 
-  return { el, clear, teachCard, mcq, sequenceStrip, badge, appendChildren };
+  /* ---- do-first helpers -------------------------------------------------
+     coach(): a single reactive bubble that modules update AS the learner
+     interacts ("you dragged past the line -> p dropped"). Returns an object
+     with a .say(html, tone) method and the .node to mount.
+     ----------------------------------------------------------------------- */
+  function coach(initialHtml) {
+    const node = el('div.coach', {}, []);
+    const bubble = el('div.coach-bubble', { html: initialHtml || '' });
+    node.appendChild(el('span.coach-face', { text: '\uD83D\uDCA1' }));
+    node.appendChild(bubble);
+    function say(html, tone) {
+      bubble.className = 'coach-bubble' + (tone ? ' coach-' + tone : '');
+      bubble.innerHTML = html;
+      // tiny pulse so a change is noticeable
+      node.classList.remove('coach-pulse');
+      void node.offsetWidth;
+      node.classList.add('coach-pulse');
+    }
+    return { node, say };
+  }
+
+  /* stuck(): a collapsed "stuck? walk me through it" panel that holds the
+     heavier teaching cards. This is where the step-by-step (mode A) lives --
+     available on demand, never shoved in the learner's face. children is an
+     array of nodes (usually teachCards). */
+  function stuck(children, label) {
+    const details = el('details.stuck', {}, [
+      el('summary.stuck-summary', { html:
+        '<span class="stuck-icon">\uD83E\uDDED</span> ' + (label || 'Stuck? Walk me through the words') }),
+      el('div.stuck-body', {}, children)
+    ]);
+    return details;
+  }
+
+  /* prompt(): the one-line instruction that sits above a widget */
+  function prompt(html) { return el('p.do-prompt', { html }); }
+
+  return { el, clear, teachCard, mcq, sequenceStrip, badge, appendChildren,
+           coach, stuck, prompt };
 })();

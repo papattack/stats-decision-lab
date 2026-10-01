@@ -16,24 +16,23 @@ const RegressionModule = (() => {
   function render(view) {
     UI.clear(view);
     view.appendChild(el('div.module-head', {}, [
-      el('h2', { text: '6 \u00b7 Regression Interpreter' }),
-      el('p.lede', { html:
-        'Learn the words first, then read real journal-style tables and <strong>click the exact number ' +
-        'you should interpret</strong>. Wrong clicks get explained.' })
+      el('h2', { text: '6 \u00b7 Read the output \u2014 click the right number' })
     ]));
 
-    const vocab = ['dependentIndependent', 'coefficient', 'referenceGroup', 'adjustedOR', 'hazardRatio'];
-    view.appendChild(el('section.teach-wrap', {}, [
-      el('h3', { text: 'Teach it first' }),
-      ...vocab.map(v => UI.teachCard(Content.VOCAB[v]))
-    ]));
+    // DO FIRST: real tables up top; click to interpret.
+    view.appendChild(UI.prompt(
+      '<strong>Here are three real journal-style tables.</strong> Each asks you to click the one number ' +
+      'you\u2019d actually interpret. Click a cell \u2014 right or wrong, it explains why.'));
     Store.markTaught(id);
-
-    view.appendChild(el('h3.section-divider', { text: 'Now read the output and click the right cell' }));
 
     view.appendChild(linearTask());
     view.appendChild(logisticTask());
     view.appendChild(bcTask());
+
+    // the words, on demand
+    const vocab = ['coefficient', 'adjustedOR', 'hazardRatio', 'referenceGroup', 'dependentIndependent'];
+    view.appendChild(UI.stuck(vocab.map(v => UI.teachCard(Content.VOCAB[v])),
+      'Stuck? What do "coefficient", "adjusted OR", "hazard ratio" and "reference group" mean?'));
 
     // harder applied question
     view.appendChild(el('h3.section-divider', { text: 'Application question' }));

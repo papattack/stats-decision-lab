@@ -18,25 +18,23 @@ const SignificanceModule = (() => {
   let stat = 2.52;                    // draggable test statistic (APGAR t)
   let useNormal = false;
 
+  let coachRef = null;
+
   function render(view) {
     UI.clear(view);
     view.appendChild(el('div.module-head', {}, [
-      el('h2', { text: '3 \u00b7 Statistical-Significance Playground' }),
-      el('p.lede', { html:
-        'Learn the five words of hypothesis testing, then <strong>drag the test statistic</strong> and watch ' +
-        'the p-value and the shaded rejection regions respond.' })
+      el('h2', { text: '3 \u00b7 Significance \u2014 drag it and see' })
     ]));
 
-    // TEACH each term plainly
-    const terms = ['nullHypothesis', 'testStatistic', 'criticalValue', 'alpha', 'statSignificance'];
-    view.appendChild(el('section.teach-wrap', {}, [
-      el('h3', { text: 'Teach it first' }),
-      ...terms.map(t => UI.teachCard(Content.VOCAB[t]))
-    ]));
+    // DO FIRST: one-line prompt, then straight into the curve.
+    view.appendChild(UI.prompt(
+      '<strong>Grab the green dot and drag it left/right.</strong> It\u2019s your "test statistic." ' +
+      'Watch what happens to the p-value and the red "reject" zones as you move it.'));
+
+    coachRef = UI.coach(
+      'Drag the dot outward (toward the red tails) and I\u2019ll tell you what it means\u2026');
+    view.appendChild(coachRef.node);
     Store.markTaught(id);
-
-    // VISUAL + MANIPULATE
-    view.appendChild(el('h3.section-divider', { text: 'Now manipulate it' }));
 
     const controls = el('div.playground-controls', {}, [
       el('label.pg-label', {}, [
@@ -99,15 +97,23 @@ const SignificanceModule = (() => {
       presetBtn('t = 2.95', 2.95, redraw, () => stat = 2.95),
       presetBtn('t = 3.11', 3.11, redraw, () => stat = 3.11)
     ]));
-    view.appendChild(el('p.table-note', { html:
-      'Note: the live p-value here is computed from the distribution you pick above, so for ' +
-      'the APGAR statistic (t = 2.52) it reads ~0.018 under a plain t with these df. ' +
-      'The lecture quotes 0.022 because the APGAR example used an unequal-variance (Welch) t-test ' +
-      'with fewer effective degrees of freedom. Either way it is &lt; 0.05 \u2014 the conclusion ' +
-      '(reject H\u2080, statistically significant) is the same.' }));
+
+    // the words, on demand (step-by-step mode A lives here, never forced)
+    const terms = ['testStatistic', 'criticalValue', 'nullHypothesis', 'alpha', 'statSignificance'];
+    view.appendChild(UI.stuck(terms.map(t => UI.teachCard(Content.VOCAB[t])),
+      'Stuck? What do "test statistic", "critical value" and "p-value" mean?'));
+
+    view.appendChild(el('details.stuck', {}, [
+      el('summary.stuck-summary', { html: '<span class="stuck-icon">\uD83D\uDD0E</span> Why doesn\u2019t t = 2.52 give exactly p = 0.022 like the slide?' }),
+      el('div.stuck-body', {}, [ el('p.table-note', { html:
+        'The live p-value is computed from the distribution you pick, so for the APGAR statistic ' +
+        '(t = 2.52) it reads ~0.018 under a plain t with these df. The lecture quotes 0.022 because ' +
+        'the APGAR example used an unequal-variance (Welch) t-test with fewer effective degrees of ' +
+        'freedom. Either way it is &lt; 0.05 \u2014 same conclusion: reject H\u2080, statistically significant.' }) ])
+    ]));
 
     // easy + hard questions
-    view.appendChild(el('h3.section-divider', { text: 'Check yourself' }));
+    view.appendChild(el('h3.section-divider', { text: 'Quick check' }));
     view.appendChild(UI.mcq({
       moduleId: id, level: 'easy', category: 'significance-pvalue',
       stem: 'You drag the test statistic from 1.0 out toward 3.0. The p-value\u2026',
@@ -214,7 +220,27 @@ const SignificanceModule = (() => {
         : el('span', { html: '|statistic| &lt; critical value \u2192 it is in the "do not reject" middle. ' +
             '<strong>Fail to reject H\u2080</strong> \u2014 not statistically significant (p &gt; 0.05).' })
     ));
+
+    // reactive coaching -- speaks to what the learner just did
+    if (coachRef) {
+      const absS = Math.abs(stat);
+      if (absS < crit - 0.4) {
+        coachRef.say('You\u2019re near the middle \u2014 a result like this is <strong>common</strong> if nothing is going on. ' +
+          'p = ' + fmtP(p) + ', well above 0.05. Keep dragging outward\u2026', 'notsig');
+      } else if (absS < crit) {
+        coachRef.say('So close! You\u2019re just <em>inside</em> the critical value \u00b1' + crit.toFixed(2) +
+          '. Nudge a touch further into the red and it flips to significant.', 'edge');
+      } else if (absS < crit + 0.7) {
+        coachRef.say('You crossed into the <strong>red rejection zone</strong>. p just dropped to ' + fmtP(p) +
+          ' (&lt; 0.05) \u2192 <strong>significant</strong>. That red tail is only 2.5% of the curve \u2014 a rare result if H\u2080 were true.', 'sig');
+      } else {
+        coachRef.say('Way out in the tail now \u2014 p = ' + fmtP(p) + '. The farther out you drag, ' +
+          'the <strong>smaller p gets</strong> and the stronger the evidence against "nothing is going on."', 'sig');
+      }
+    }
   }
+
+  function fmtP(p) { return p < 0.0001 ? '&lt; 0.0001' : p.toFixed(4); }
 
   // tiny helper used above (defined after to keep draw readable)
   function chip(label, value) {

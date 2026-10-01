@@ -15,45 +15,27 @@ const ErrorsModule = (() => {
   const W = 640, H = 300, PAD = 36;
   let nPerGroup = 30;      // sample size per group
   let effect = 0.5;        // true standardized effect size (Cohen's d-ish)
+  let coachRef = null;
 
   function render(view) {
     UI.clear(view);
     view.appendChild(el('div.module-head', {}, [
-      el('h2', { text: '7 \u00b7 Error & Power Simulator' }),
-      el('p.lede', { html:
-        'Learn the four ideas with a diagnostic-test story, then <strong>slide sample size and effect size</strong> ' +
-        'and watch statistical power rise and fall.' })
+      el('h2', { text: '7 \u00b7 Power \u2014 slide and watch' })
     ]));
 
-    // TEACH with the pregnancy/diagnostic framing from the slides
-    view.appendChild(el('section.teach-wrap', {}, [
-      el('h3', { text: 'Teach it first' }),
-      el('div.why-box', {}, [
-        el('h4', { text: 'Set up the hypothesis like a diagnostic test' }),
-        el('p', { html:
-          'H\u2080: the patient does <strong>not</strong> have the disease. H\u2090: the patient <strong>does</strong>.' }),
-        el('ul', {}, [
-          el('li', { html: '<strong>Type I error</strong> = the test says "diseased" when the patient is healthy ' +
-            '(reject a true H\u2080) \u2014 a <em>false positive</em>. Think: telling a man "you\u2019re pregnant."' }),
-          el('li', { html: '<strong>Type II error</strong> = the test says "healthy" when the patient is diseased ' +
-            '(fail to reject a false H\u2080) \u2014 a <em>false negative</em>. Think: telling a visibly pregnant woman "you\u2019re not pregnant."' })
-        ])
-      ]),
-      UI.teachCard(Content.VOCAB.typeI),
-      UI.teachCard(Content.VOCAB.typeII),
-      UI.teachCard(Content.VOCAB.alpha)
-    ]));
-    Store.markTaught(id);
+    // DO FIRST
+    view.appendChild(UI.prompt(
+      '<strong>Drag the two sliders.</strong> The green curve is "a real effect exists"; the blue curve is ' +
+      '"nothing is going on." As you add patients or a bigger effect, watch the green curve pull away and ' +
+      '<strong>power</strong> climb.'));
 
-    // 2x2 truth table
-    view.appendChild(truthTable());
-
-    // VISUAL + MANIPULATE
-    view.appendChild(el('h3.section-divider', { text: 'Now manipulate it' }));
     view.appendChild(el('p.table-note', { html:
-      'The left curve is the world if H\u2080 is true; the right curve is the world if the real effect is as large as ' +
-      'you set. <span class="swatch swatch-alpha"></span> = Type I (\u03b1); ' +
-      '<span class="swatch swatch-beta"></span> = Type II (\u03b2); power = 1 \u2212 \u03b2.' }));
+      '<span class="swatch swatch-alpha"></span> = Type I (\u03b1, false positive); ' +
+      '<span class="swatch swatch-beta"></span> = Type II (\u03b2, false negative); power = 1 \u2212 \u03b2.' }));
+
+    coachRef = UI.coach('Push the sliders up and I\u2019ll tell you what\u2019s happening to power and the two error types\u2026');
+    view.appendChild(coachRef.node);
+    Store.markTaught(id);
 
     const controls = el('div.playground-controls', {}, [
       slider('Sample size per group (n)', 3, 200, nPerGroup, 1, (v) => { nPerGroup = v; redraw(); }, () => nPerGroup),
@@ -68,6 +50,24 @@ const ErrorsModule = (() => {
 
     const readout = el('div#pow-readout.readout', {}, []);
     view.appendChild(readout);
+
+    // the words + truth table, on demand
+    view.appendChild(UI.stuck([
+      el('div.why-box', {}, [
+        el('h4', { text: 'The hypothesis, like a diagnostic test' }),
+        el('p', { html: 'H\u2080: the patient does <strong>not</strong> have the disease. H\u2090: the patient <strong>does</strong>.' }),
+        el('ul', {}, [
+          el('li', { html: '<strong>Type I error</strong> = test says "diseased" when the patient is healthy ' +
+            '(reject a true H\u2080) \u2014 a <em>false positive</em>. Think: telling a man "you\u2019re pregnant."' }),
+          el('li', { html: '<strong>Type II error</strong> = test says "healthy" when the patient is diseased ' +
+            '(fail to reject a false H\u2080) \u2014 a <em>false negative</em>.' })
+        ])
+      ]),
+      truthTable(),
+      UI.teachCard(Content.VOCAB.typeI),
+      UI.teachCard(Content.VOCAB.typeII),
+      UI.teachCard(Content.VOCAB.alpha)
+    ], 'Stuck? What are Type I / Type II errors, \u03b1, \u03b2 and power?'));
 
     // questions
     view.appendChild(el('h3.section-divider', { text: 'Check yourself' }));
@@ -195,6 +195,20 @@ const ErrorsModule = (() => {
         : el('span', { html: 'Power &lt; 80% \u2014 a real effect could easily be <strong>missed (Type II error)</strong>. ' +
             'The usual fixes: a bigger sample or a larger true effect.' })
     ));
+
+    if (coachRef) {
+      const pct = (power * 100).toFixed(0);
+      if (power >= 0.8) {
+        coachRef.say('Power is <strong>' + pct + '%</strong> \u2014 the two curves barely overlap now, so \u03b2 (the blue ' +
+          'false-negative zone) is small. A real effect this size would almost always be caught.', 'sig');
+      } else if (power >= 0.5) {
+        coachRef.say('Power is <strong>' + pct + '%</strong> \u2014 a coin-flip-ish chance of catching the effect. ' +
+          'The curves still overlap a lot. Add patients or increase the effect to separate them.', 'edge');
+      } else {
+        coachRef.say('Power is only <strong>' + pct + '%</strong> \u2014 the curves overlap heavily, so a real effect ' +
+          'would usually slip through as a <strong>Type II error</strong>. This is what "underpowered" looks like.', 'notsig');
+      }
+    }
   }
 
   function chip(label, value) {
