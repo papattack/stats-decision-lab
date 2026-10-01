@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Stats Decision Lab — EBR I</title>
+<link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+<header class="app-header">
+  <div class="brand">
+    <span class="logo">🧪</span>
+    <div>
+      <h1>Stats Decision Lab</h1>
+      <p class="subtitle">An interactive guide to the stats in your EBR&nbsp;I lectures (PAS&nbsp;6097)</p>
+    </div>
+  </div>
+  <button id="reset-progress" class="ghost-btn" title="Clear everything you've learned/answered">Reset progress</button>
+</header>
+
+<nav class="tabbar" id="tabbar" aria-label="Modules">
+  <!-- buttons injected by app.js -->
+</nav>
+
+<main id="view" class="view">
+  <!-- active module rendered here -->
+</main>
+
+<footer class="app-footer">
+  <p>
+    Content grounded in Dr.&nbsp;Charles Saunders' EBR&nbsp;I lectures (Lectures&nbsp;1–5).
+    This tool teaches concepts the way the course does — it is a study aid, not medical advice.
+  </p>
+</footer>
+
+<!-- order matters: helpers → data → modules → app -->
+<script src="js/stats-math.js"></script>
+<script src="js/store.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/content.js"></script>
+<script src="js/modules/map.js"></script>
+<script src="js/modules/choose-test.js"></script>
+<script src="js/modules/significance.js"></script>
+<script src="js/modules/confidence.js"></script>
+<script src="js/modules/risk.js"></script>
+<script src="js/modules/regression.js"></script>
+<script src="js/modules/errors.js"></script>
+<script src="js/modules/exam.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
